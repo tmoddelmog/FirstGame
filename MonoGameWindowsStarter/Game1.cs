@@ -12,10 +12,18 @@ namespace MonoGameWindowsStarter
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        Random rand = new Random();
+
+        KeyboardState newKeyboardState, oldKeyboardState;
+
         Texture2D ball;
         Vector2 ballPosition = Vector2.Zero;
         Vector2 ballVelocity;
+        Random rand = new Random();
+
+        Texture2D paddle;
+        Rectangle paddleRect;
+        int paddleSpeed = 0;
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -37,6 +45,11 @@ namespace MonoGameWindowsStarter
 
             ballVelocity = new Vector2((float)rand.NextDouble(), (float)rand.NextDouble());
 
+            paddleRect.X = 0;
+            paddleRect.Y = 0;
+            paddleRect.Width = 25;
+            paddleRect.Height = 250;
+
             base.Initialize();
         }
 
@@ -51,6 +64,7 @@ namespace MonoGameWindowsStarter
 
             // TODO: use this.Content to load your game content here
             ball = Content.Load<Texture2D>("ball");
+            paddle = Content.Load<Texture2D>("pixel");
         }
 
         /// <summary>
@@ -69,14 +83,28 @@ namespace MonoGameWindowsStarter
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed
+                || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
             // TODO: Add your update logic here
-            ballPosition += (float)gameTime.ElapsedGameTime.TotalMilliseconds * ballVelocity;
+            newKeyboardState = Keyboard.GetState();
 
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+            if (newKeyboardState.IsKeyDown(Keys.Up)
+                && !oldKeyboardState.IsKeyDown(Keys.Up))
+                paddleSpeed -= 10;
+            if (newKeyboardState.IsKeyDown(Keys.Down)
+                && !oldKeyboardState.IsKeyDown(Keys.Down))
+                paddleSpeed += 10;
+
+            paddleRect.Y += paddleSpeed;
+
+            if (paddleRect.Y < 0)
+                paddleRect.Y = 0;
+            if (paddleRect.Y > GraphicsDevice.Viewport.Height - paddleRect.Height)
+                paddleRect.Y = GraphicsDevice.Viewport.Height - paddleRect.Height;
+
+            ballPosition += (float)gameTime.ElapsedGameTime.TotalMilliseconds * ballVelocity;
 
             // check for wall collisions
             // top
@@ -108,6 +136,8 @@ namespace MonoGameWindowsStarter
                 ballPosition.X += 2 * delta;
             }
 
+            oldKeyboardState = newKeyboardState;
+
             base.Update(gameTime);
         }
 
@@ -129,6 +159,8 @@ namespace MonoGameWindowsStarter
                     100,
                     100),
                 Color.White);
+
+            spriteBatch.Draw(paddle, paddleRect, Color.Red);
 
             spriteBatch.End();
 
